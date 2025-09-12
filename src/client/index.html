@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Zima</title>
+    <meta
+      name="viewport"
+      content="minimum-scale=1, initial-scale=1, width=device-width"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-title" content="Lumiere" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="mask-icon" href="mask-icon.svg" color="#000000" />
+    <link
+      href="https://raw.githubusercontent.com/mrsharpoblunto/zima/main/src/client/apple-touch-icon.png"
+      rel="apple-touch-icon"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+    <style>
+      canvas {
+        image-rendering: -moz-crisp-edges; /* Firefox */
+        image-rendering: -webkit-crisp-edges; /* Webkit (Safari) */
+        image-rendering: pixelated; /* Chrome */
+      }
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #app-container {
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app-container"></div>
+    <script type="module" src="index.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,57 @@
+{
+  "name": "Zima",
+  "version": "1.0.0",
+  "description": "Control a powered pool cover",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:client": "rimraf dist/client/ && tsc && vite build --mode client",
+    "server": "node src/server/index.ts",
+    "dev:client": "vite --port 3001 --mode client",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrsharpoblunto/zima.git"
+  },
+  "author": "Glenn Conner",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mrsharpoblunto/zima/issues"
+  },
+  "homepage": "https://github.com/mrsharpoblunto/zima#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.5",
+    "errorhandler": "^1.5.1",
+    "express": "^5.1.0",
+    "hap-nodejs": "^0.11.2",
+    "morgan": "^1.10.0",
+    "node-fetch": "^2.6.1",
+    "node-persist": "^3.1.0",
+    "uuid": "^11.1.0",
+    "winston": "^3.3.3",
+    "onoff": "^6.0.0"
+  },
+  "devDependencies": {
+    "@fsouza/prettierd": "^0.26.1",
+    "@types/body-parser": "^1.19.5",
+    "@types/compression": "^1.7.5",
+    "@types/cookie-parser": "^1.4.6",
+    "@types/errorhandler": "^1.5.3",
+    "@types/express": "^5.0.2",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^20.10.5",
+    "@types/node-fetch": "^2.6.9",
+    "@types/node-persist": "^3.1.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "prettier": "^2.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.3.3",
+    "vite": "^6.3.5"
+  }
+}
