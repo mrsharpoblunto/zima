@@ -35,8 +35,9 @@ fi
 echo "Installing dependencies..."
 npm install
 
-echo "Building client..."
+echo "Building client & server..."
 npm run build:client
+npm run build:server
 
 echo "Restarting service..."
 sudo systemctl restart zima
