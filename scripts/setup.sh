@@ -6,7 +6,7 @@ fi
 
 # install dependencies
 apt-get update
-apt-get install openssl libavahi-compat-libdnssd-dev curl unzip nodejs npm
+apt-get install openssl libavahi-compat-libdnssd-dev libgpiod-dev curl unzip nodejs npm
 
 setcap 'cap_sys_nice=eip' $(which node)
 setcap 'cap_net_bind_service=+ep' $(which node)

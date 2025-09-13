@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import * as config from "./config.ts";
 import { type Logger } from "winston";
-import * as onoff from "onoff";
+import * as libgpiod from "node-libgpiod";
 import {
   type CoverState,
   COVER_OPENING,
@@ -27,10 +27,11 @@ export class CoverController extends EventEmitter {
   private lastStateChangeTime: number;
   private positionAtLastStateChange: number;
 
-  private closeLimiterGPIO: any;
-  private openLimiterGPIO: any;
-  private motorOpenGPIO: any;
-  private motorCloseGPIO: any;
+  private chip: any;
+  private closeLimiterLine: any;
+  private openLimiterLine: any;
+  private motorOpenLine: any;
+  private motorCloseLine: any;
 
   constructor(logger: Logger) {
     super();
@@ -51,10 +52,28 @@ export class CoverController extends EventEmitter {
     this.controlLoop = null;
 
     try {
-      this.closeLimiterGPIO = new onoff.Gpio(config.CLOSE_LIMITER_GPIO, "in");
-      this.openLimiterGPIO = new onoff.Gpio(config.OPEN_LIMITER_GPIO, "in");
-      this.motorOpenGPIO = new onoff.Gpio(config.MOTOR_OPEN_GPIO, "out");
-      this.motorCloseGPIO = new onoff.Gpio(config.MOTOR_CLOSE_GPIO, "out");
+      this.chip = new libgpiod.Chip(0);
+
+      this.closeLimiterLine = new libgpiod.Line(
+        this.chip,
+        config.CLOSE_LIMITER_GPIO
+      );
+      this.closeLimiterLine.requestInputMode();
+
+      this.openLimiterLine = new libgpiod.Line(
+        this.chip,
+        config.OPEN_LIMITER_GPIO
+      );
+      this.openLimiterLine.requestInputMode();
+
+      this.motorOpenLine = new libgpiod.Line(this.chip, config.MOTOR_OPEN_GPIO);
+      this.motorOpenLine.requestOutputMode();
+
+      this.motorCloseLine = new libgpiod.Line(
+        this.chip,
+        config.MOTOR_CLOSE_GPIO
+      );
+      this.motorCloseLine.requestOutputMode();
     } catch (err) {
       if (err instanceof Error) {
         logger.error("Failed to register GPIO pins");
@@ -64,10 +83,11 @@ export class CoverController extends EventEmitter {
       // calibration
       this.calibrationInfo.calibrated = true;
       this.state.calibration = "calibrated";
-      this.closeLimiterGPIO = null;
-      this.openLimiterGPIO = null;
-      this.motorOpenGPIO = null;
-      this.motorCloseGPIO = null;
+      this.chip = null;
+      this.closeLimiterLine = null;
+      this.openLimiterLine = null;
+      this.motorOpenLine = null;
+      this.motorCloseLine = null;
     }
 
     storage
@@ -87,6 +107,13 @@ export class CoverController extends EventEmitter {
       .finally(() => {
         this.startPolling();
       });
+
+    process.on("SIGINT", () => {
+      this.cleanup();
+    });
+    process.on("SIGTERM", () => {
+      this.cleanup();
+    });
   }
 
   startPolling(): void {
@@ -96,16 +123,16 @@ export class CoverController extends EventEmitter {
 
       if (this.state.currentPosition < this.state.targetPosition) {
         this.state.positionState = COVER_OPENING;
-        this.motorCloseGPIO?.writeSync(0);
-        this.motorOpenGPIO?.writeSync(1);
+        this.motorCloseLine?.setValue(0);
+        this.motorOpenLine?.setValue(1);
       } else if (this.state.currentPosition > this.state.targetPosition) {
         this.state.positionState = COVER_CLOSING;
-        this.motorOpenGPIO?.writeSync(0);
-        this.motorCloseGPIO?.writeSync(1);
+        this.motorOpenLine?.setValue(0);
+        this.motorCloseLine?.setValue(1);
       } else {
         this.state.positionState = COVER_STOPPED;
-        this.motorOpenGPIO?.writeSync(0);
-        this.motorCloseGPIO?.writeSync(0);
+        this.motorOpenLine?.setValue(0);
+        this.motorCloseLine?.setValue(0);
       }
 
       if (this.state.positionState !== previousPositionState) {
@@ -144,19 +171,19 @@ export class CoverController extends EventEmitter {
       // but also ensure we give the cover time to move before checking limiters
       if (
         Date.now() - this.lastStateChangeTime > 5000 &&
-        this.openLimiterGPIO &&
-        this.closeLimiterGPIO
+        this.openLimiterLine &&
+        this.closeLimiterLine
       ) {
-        if (this.closeLimiterGPIO.readSync() !== 0) {
-          this.motorCloseGPIO?.writeSync(0);
-          this.motorOpenGPIO?.writeSync(0);
+        if (this.closeLimiterLine.getValue() !== 0) {
+          this.motorCloseLine?.setValue(0);
+          this.motorOpenLine?.setValue(0);
           this.state.positionState = COVER_STOPPED;
           this.state.targetPosition = 0;
           this.state.currentPosition = 0;
         }
-        if (this.openLimiterGPIO.readSync() !== 0) {
-          this.motorCloseGPIO?.writeSync(0);
-          this.motorOpenGPIO?.writeSync(0);
+        if (this.openLimiterLine.getValue() !== 0) {
+          this.motorCloseLine?.setValue(0);
+          this.motorOpenLine?.setValue(0);
           this.state.positionState = COVER_STOPPED;
           this.state.targetPosition = 100;
           this.state.currentPosition = 100;
@@ -173,11 +200,19 @@ export class CoverController extends EventEmitter {
     }, 100);
   }
 
-  stopPolling(): void {
+  cleanup(): void {
     if (this.controlLoop) {
       clearInterval(this.controlLoop);
       this.controlLoop = null;
     }
+    if (this.chip) {
+      this.motorOpenLine?.release();
+      this.motorCloseLine?.release();
+      this.openLimiterLine?.release();
+      this.closeLimiterLine?.release();
+      this.chip.close();
+    }
+    process.exit();
   }
 
   getState(): CoverState {
