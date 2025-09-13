@@ -134,8 +134,8 @@ function stop(updateState: (newState: Partial<CoverState>) => void) {
 }
 
 function calibrate(updateState: (newState: Partial<CoverState>) => void) {
-  const optimisticState = {
-    calibrating: true,
+  const optimisticState: Partial<CoverState> = {
+    calibration: "inprogress",
   };
   updateState(optimisticState);
   fetch("/api/1/calibrate", {
@@ -217,7 +217,7 @@ function App() {
         .pool {
           position: absolute;
           top: 96px;
-          bottom: 32px;
+          bottom: 48px;
           left: 20px;
           right: 20px;
           background: #00ccff;
@@ -254,6 +254,14 @@ function App() {
         }
         .control-button:active {
           background: #222;
+        }
+        .control-button:disabled {
+          background: #666;
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .control-button:disabled:hover {
+          background: #666;
         }
         .control-button.config {
           margin-top: 4px;
@@ -399,7 +407,7 @@ function PoolCover(props: { currentPosition: number }) {
       <div
         className="pool-cover-surface"
         style={{
-          height: `calc((100dvh - 100px) * ${
+          height: `calc((100dvh - 116px) * ${
             (100 - props.currentPosition) / 100
           } + 50px)`,
         }}
@@ -453,9 +461,9 @@ function Controls({
   return (
     <>
       <Modal
-        isOpen={showCalibrationModal || state.calibrating}
+        isOpen={showCalibrationModal || state.calibration === "inprogress"}
         onClose={() => {
-          if (!state.calibrating) {
+          if (state.calibration !== "inprogress") {
             setShowCalibrationModal(false);
           }
         }}
@@ -469,16 +477,16 @@ function Controls({
           <button
             className="modal-button cancel"
             onClick={() => setShowCalibrationModal(false)}
-            disabled={state.calibrating}
+            disabled={state.calibration === "inprogress"}
           >
             Cancel
           </button>
           <button
             className="modal-button confirm"
             onClick={handleCalibrate}
-            disabled={state.calibrating}
+            disabled={state.calibration === "inprogress"}
           >
-            {state.calibrating ? (
+            {state.calibration === "inprogress" ? (
               <>
                 <Loader2
                   size={16}
@@ -497,10 +505,15 @@ function Controls({
         <button
           className="control-button config"
           onClick={() => setShowCalibrationModal(true)}
+          disabled={state.calibration === "inprogress"}
         >
           <Settings size={24} />
         </button>
-        <button className="control-button" onClick={() => open(updateState)}>
+        <button
+          className="control-button"
+          onClick={() => open(updateState)}
+          disabled={state.calibration !== "calibrated"}
+        >
           <ChevronsUp size={24} />
         </button>
         <button
@@ -510,10 +523,15 @@ function Controls({
           onMouseLeave={handleOpenHoldEnd}
           onTouchStart={handleOpenHoldStart}
           onTouchEnd={handleOpenHoldEnd}
+          disabled={state.calibration !== "calibrated"}
         >
           <ChevronUp size={24} />
         </button>
-        <button className="control-button" onClick={() => stop(updateState)}>
+        <button
+          className="control-button"
+          onClick={() => stop(updateState)}
+          disabled={state.calibration !== "calibrated"}
+        >
           <Pause size={24} />
         </button>
         <button
@@ -523,10 +541,15 @@ function Controls({
           onMouseLeave={handleCloseHoldEnd}
           onTouchStart={handleCloseHoldStart}
           onTouchEnd={handleCloseHoldEnd}
+          disabled={state.calibration !== "calibrated"}
         >
           <ChevronDown size={24} />
         </button>
-        <button className="control-button" onClick={() => close(updateState)}>
+        <button
+          className="control-button"
+          onClick={() => close(updateState)}
+          disabled={state.calibration !== "calibrated"}
+        >
           <ChevronsDown size={24} />
         </button>
       </div>

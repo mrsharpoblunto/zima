@@ -37,7 +37,7 @@ export class CoverController extends EventEmitter {
       currentPosition: 0,
       targetPosition: 0,
       positionState: COVER_STOPPED,
-      calibrating: false,
+      calibration: "uncalibrated",
     };
     this.calibrationInfo = {
       calibrated: false,
@@ -56,7 +56,10 @@ export class CoverController extends EventEmitter {
       this.motorOpenGPIO = new onoff.Gpio(config.MOTOR_OPEN_GPIO, "out");
       this.motorCloseGPIO = new onoff.Gpio(config.MOTOR_CLOSE_GPIO, "out");
     } catch (err) {
+      // Probably not running on a Raspberry Pi, disable GPIO control & fake
+      // calibration
       this.calibrationInfo.calibrated = true;
+      this.state.calibration = "calibrated";
       this.closeLimiterGPIO = null;
       this.openLimiterGPIO = null;
       this.motorOpenGPIO = null;
@@ -69,6 +72,9 @@ export class CoverController extends EventEmitter {
         if (data) {
           try {
             this.calibrationInfo = JSON.parse(data) as CoverCalibrationInfo;
+            if (this.calibrationInfo.calibrated) {
+              this.state.calibration = "calibrated";
+            }
           } catch (err) {}
         }
       })
@@ -174,7 +180,7 @@ export class CoverController extends EventEmitter {
 
   open(): void {
     if (
-      !this.state.calibrating &&
+      this.state.calibration === "calibrated" &&
       Date.now() - this.lastStateChangeTime > 1000
     ) {
       this.state.targetPosition = 100;
@@ -183,7 +189,7 @@ export class CoverController extends EventEmitter {
 
   close(): void {
     if (
-      !this.state.calibrating &&
+      this.state.calibration === "calibrated" &&
       Date.now() - this.lastStateChangeTime > 1000
     ) {
       this.state.targetPosition = 0;
@@ -191,14 +197,14 @@ export class CoverController extends EventEmitter {
   }
 
   stop(): void {
-    if (!this.state.calibrating) {
+    if (this.state.calibration === "calibrated") {
       this.state.targetPosition = this.state.currentPosition;
     }
   }
 
   setTargetPosition(position: number): void {
     if (
-      !this.state.calibrating &&
+      this.state.calibration === "calibrated" &&
       Date.now() - this.lastStateChangeTime > 1000
     ) {
       if (position < 0 || position > 100) {
@@ -209,11 +215,11 @@ export class CoverController extends EventEmitter {
   }
 
   calibrate(): void {
-    if (this.state.calibrating) {
+    if (this.state.calibration === "inprogress") {
       return;
     }
 
-    this.state.calibrating = true;
+    this.state.calibration = "inprogress";
     this.state.targetPosition = 0;
 
     let calibrationState = "INITIAL_CLOSE";
@@ -267,7 +273,7 @@ export class CoverController extends EventEmitter {
               JSON.stringify(this.calibrationInfo)
             );
             clearInterval(calibrationLoop);
-            this.state.calibrating = false;
+            this.state.calibration = "calibrated";
             this.emit("change", { state: this.getState() });
           }
           break;

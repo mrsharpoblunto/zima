@@ -6,5 +6,5 @@ export type CoverState = {
   currentPosition: number;
   targetPosition: number;
   positionState: number;
-  calibrating: boolean;
+  calibration: "uncalibrated" | "inprogress" | "calibrated";
 };
