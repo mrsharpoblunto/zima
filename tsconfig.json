@@ -9,7 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "jsx": "react",
-    "outDir": "dist/server",
     "rootDir": "src",
     "resolveJsonModule": true,
     "isolatedModules": true,

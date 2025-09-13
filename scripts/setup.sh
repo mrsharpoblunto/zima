@@ -5,24 +5,16 @@ if [ "$(whoami)" != "root" ]; then
 fi
 
 # install dependencies
-apt-get install openssl libavahi-compat-libdnssd-dev curl unzip
+apt-get update
+apt-get install openssl libavahi-compat-libdnssd-dev curl unzip nodejs npm
 
-# install fnm
-curl -fsSL https://fnm.vercel.app/install | bash
-FNM_PATH="/home/pi/.local/share/fnm"
-if [ -d "$FNM_PATH" ]; then
-  export PATH="$FNM_PATH:$PATH"
-  eval "`fnm env`"
-fi
-
-# install node & set caps
-fnm i v24.0.2
 setcap 'cap_sys_nice=eip' $(which node)
 setcap 'cap_net_bind_service=+ep' $(which node)
 
 # build the app & web client
 npm install
 npm run build:client
+npm run build:server
 
 # generate self signed ssl certs
 ip address show | grep -Po '(?<=inet )\d*.\d*.\d*.\d*.(?=/)' | while read -r line
@@ -45,4 +37,4 @@ systemctl enable zima
 
 # add cron job to check for updates every 15 minutes
 cron_job="*/15 * * * * cd $cwd && ./scripts/update.sh >> /var/log/zima-update.log 2>&1"
-(crontab -l 2>/dev/null | grep -v "lumiere"; echo "$cron_job") | crontab -
+(crontab -l 2>/dev/null | grep -v "zima"; echo "$cron_job") | crontab -

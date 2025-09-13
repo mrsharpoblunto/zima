@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { WaterCausticsShader } from './WaterCausticsShader';
+import { WaterCausticsShader } from './WaterCausticsShader.ts';
 
 interface WaterCausticsCanvasProps {
   className?: string;
