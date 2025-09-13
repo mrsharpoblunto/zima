@@ -11,7 +11,6 @@
     "jsx": "react",
     "rootDir": "src",
     "resolveJsonModule": true,
-    "isolatedModules": true,
     "noImplicitAny": false,
     "declaration": true,
     "sourceMap": true,

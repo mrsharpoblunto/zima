@@ -26,7 +26,7 @@ export const PUBLIC_STATIC_CACHING =
         },
       };
 export const HOMEKIT_PORT = 51826;
-export const HOMEKIT_USERNAME = "1A:2B:3C:4D:5F:FF";
+export const HOMEKIT_USERNAME = "1A:2B:3C:4D:5F:EF";
 export const HOMEKIT_PINCODE = "031-45-166";
 export const MANUFACTURER = "Straylight Technologies";
 export const MODEL = "Rev 1";

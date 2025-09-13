@@ -6,6 +6,7 @@ import fs from "fs";
 import storage from "node-persist";
 import { v4 } from "uuid";
 import coverAccessory from "./cover-accessory.ts";
+import * as hap from "hap-nodejs";
 
 import express from "express";
 import type { Express, Request, Response } from "express";
@@ -102,6 +103,7 @@ async function startHomekitServer(app: Express) {
     port: config.HOMEKIT_PORT,
     username: config.HOMEKIT_USERNAME,
     pincode: config.HOMEKIT_PINCODE,
+    category: hap.Categories.DOOR,
   });
   app.locals.logger?.info("Published HomeKit Accessory Info");
 }
