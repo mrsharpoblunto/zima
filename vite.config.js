@@ -15,6 +15,14 @@ export default defineConfig(({ mode }) => {
         },
         assetsInlineLimit: 4096,
       },
+      server: {
+        proxy: {
+          '/api/1': {
+            target: 'http://localhost:3000',
+            changeOrigin: true,
+          },
+        },
+      },
     };
   }
   return {};

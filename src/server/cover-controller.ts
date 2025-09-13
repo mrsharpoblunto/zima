@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import * as config from "./config.ts";
 import {
-  CoverState,
+  type CoverState,
   COVER_OPENING,
   COVER_CLOSING,
   COVER_STOPPED,
@@ -41,8 +41,8 @@ export class CoverController extends EventEmitter {
     };
     this.calibrationInfo = {
       calibrated: false,
-      openTime: 60000,
-      closeTime: 60000,
+      openTime: 10000,
+      closeTime: 15000,
     };
     this.lastStateChangeTime = Date.now();
     this.positionAtLastStateChange = 0;
@@ -56,6 +56,7 @@ export class CoverController extends EventEmitter {
       this.motorOpenGPIO = new onoff.Gpio(config.MOTOR_OPEN_GPIO, "out");
       this.motorCloseGPIO = new onoff.Gpio(config.MOTOR_CLOSE_GPIO, "out");
     } catch (err) {
+      this.calibrationInfo.calibrated = true;
       this.closeLimiterGPIO = null;
       this.openLimiterGPIO = null;
       this.motorOpenGPIO = null;
@@ -123,6 +124,8 @@ export class CoverController extends EventEmitter {
             this.positionAtLastStateChange - positionChange
           );
         }
+      } else if (this.state.currentPosition === this.state.targetPosition) {
+        this.state.positionState = COVER_STOPPED;
       }
 
       // if limiter switches engage, stop the cover and set currentPosition to 0 or 100
@@ -170,13 +173,19 @@ export class CoverController extends EventEmitter {
   }
 
   open(): void {
-    if (!this.state.calibrating) {
+    if (
+      !this.state.calibrating &&
+      Date.now() - this.lastStateChangeTime > 1000
+    ) {
       this.state.targetPosition = 100;
     }
   }
 
   close(): void {
-    if (!this.state.calibrating) {
+    if (
+      !this.state.calibrating &&
+      Date.now() - this.lastStateChangeTime > 1000
+    ) {
       this.state.targetPosition = 0;
     }
   }
@@ -188,7 +197,10 @@ export class CoverController extends EventEmitter {
   }
 
   setTargetPosition(position: number): void {
-    if (!this.state.calibrating) {
+    if (
+      !this.state.calibrating &&
+      Date.now() - this.lastStateChangeTime > 1000
+    ) {
       if (position < 0 || position > 100) {
         throw new Error("Position must be between 0 and 100");
       }

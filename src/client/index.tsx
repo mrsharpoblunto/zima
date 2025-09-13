@@ -6,6 +6,17 @@ import {
   COVER_OPENING,
   COVER_STOPPED,
 } from "../shared/cover-state.ts";
+import { WaterCausticsCanvas } from "./WaterCausticsCanvas.tsx";
+import {
+  Settings,
+  ChevronsUp,
+  ChevronUp,
+  Pause,
+  ChevronDown,
+  ChevronsDown,
+  X,
+  Loader2,
+} from "lucide-react";
 
 const LONGPOLL_TIMEOUT = 30000;
 
@@ -135,174 +146,390 @@ function calibrate(updateState: (newState: Partial<CoverState>) => void) {
 }
 
 function App() {
+  const [state, updateState] = useRemoteState();
   return (
     <>
       <style>{`
         * {
-          box-sizing: border-box;
           margin: 0;
           padding: 0;
+          box-sizing: border-box;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
-        
-        body {
-          font-family: 'Pixelify Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          background-color: #121212;
-          color: #f5f5f5;
-          overflow-x: hidden;
-          image-rendering: pixelated;
-        }
-        
         #app-container {
-          height: 100vh;
-          width: 100vw;
+          background: radial-gradient(ellipse at center top, #d5d5d5 0%, #c8c8c8 40%, #b8b8b8 100%);
+        }
+        .wrapper {
+          width: calc(100dvh * 0.5625);
+          padding: 10px;
+          height: 100dvh;
+          max-width: 768px;
+          display: flex;
+          flex-direction: row;
           position: relative;
-          margin: 0 auto;
-          scroll-snap-type: y proximity;
-          overflow-y: scroll;
+          box-sizing: border-box;
         }
-        
-        .toggle-button {
-          appearance: none;
-          position: fixed;
-          top: 8px;
+        .pool-cover {
+          flex: 1;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+        }
+        .pool-bench {
+          margin-top: 16px;
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        .pool-bench-slat {
+          display: flex;
+          height: 6px;
+          background: linear-gradient(to bottom, #e6c9a3 0%, #ddb896 40%, #d4a680 100%);
+          border-radius: 4px;
+          border: 1px solid #c09570;
+          margin: 1px;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .pool-cover-surface {
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          position: absolute;
+          top: 32px;
           left: 8px;
-          cursor: pointer;
-          z-index: 100;
-          border: none;
+          right: 8px;
+          transition: height 1.5s linear;
         }
-        
-        .toggle-switch {
-          width: 96px;
+        .pool-cover-surface-inner {
+          flex: 1;
+          margin-left: 8px;
+          margin-right: 8px;
+          background: radial-gradient(ellipse at center, #0080ff 0%, #0080ff 30%, #0060ff 80%, #0050ee 100%);
+        }
+        .pool-cover-surface-cap {
+          height: 8px;
+          background: linear-gradient(to bottom, #e0e0e0 0%, #b8b8b8 20%, #999999 50%, #b8b8b8 80%, #cccccc 100%);
+          border-radius: 1px;
+          border: 1px solid #666;
+        }
+        .pool {
+          position: absolute;
+          top: 96px;
+          bottom: 32px;
+          left: 20px;
+          right: 20px;
+          background: #00ccff;
+          border-radius: 64px;
+          border: 1px solid #00bbff;
+          overflow: hidden;
+          box-shadow: 0 0 12px 4px rgba(0, 0, 0, 0.15);
+        }
+        .controls {
+          width: 64px;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          padding: 16px 8px;
+          align-items: center;
+        }
+        .control-button {
+          width: 48px;
           height: 48px;
+          background: #333;
+          border: none;
+          border-radius: 8px;
+          color: white;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+          font-size: 20px;
+        }
+        .control-button:hover {
+          background: #444;
+        }
+        .control-button:active {
+          background: #222;
+        }
+        .control-button.config {
+          margin-top: 4px;
+          margin-bottom: 16px;
+        }
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+        .modal-dialog {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 400px;
+          width: 90%;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        .modal-title {
+          font-size: 20px;
+          font-weight: bold;
+          color: #333;
+        }
+        .modal-close {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #666;
+          padding: 4px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
-        
-        .toggle-slider {
-          width: 96px;
-          height: 48px;
-          background-color: #121212;
-          border: 4px solid #f5f5f5;
-          position: relative;
-          transition: all 0.2s ease;
+        .modal-close:hover {
+          color: #333;
         }
-        
-        .toggle-slider.on {
-          background-color: #4CAF50;
+        .modal-body {
+          color: #666;
+          margin-bottom: 24px;
+          line-height: 1.5;
         }
-        
-        .toggle-knob {
-          position: absolute;
-          left: 4px;
-          top: 4px;
-          width: 32px;
-          height: 32px;
-          background-color: #f5f5f5;
-          transition: transform 0.2s ease;
-        }
-        
-        .toggle-slider.on .toggle-knob {
-          transform: translateX(48px);
-        }
-        
-        .volume-button {
-          position: fixed;
-          top: 8px;
-          right: calc(8px + env(scrollbar-width, 15px));
-          z-index: 100;
-        }
-        
-        .volume-control {
-          width: 104px;
-          height: 48px;
-          cursor: pointer;
-          position: relative;
-        }
-        
-        .volume-control::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 104px;
-          height: 48px;
-          background-color: #f5f5f5;
-          clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
-          z-index: 0;
-        }
-        
-        .volume-triangle {
-          position: absolute;
-          top: 7px;
-          left: 4px;
-          width: 83px;
-          height: 37px;
-          background-color: #121212;
-          clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
-          overflow: hidden;
-          z-index: 1;
-        }
-        
-        .volume-fill {
-          position: absolute;
-          top: 0;
-          right: 0;
-          height: 100%;
-          background-color: #4CAF50;
-          clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
-          z-index: 2;
-        }
-        
-        .volume-slider {
-          position: absolute;
-          top: 0px;
-          width: 8px;
-          height: 56px;
-          background-color: #f5f5f5;
-          transform: translateX(-4px);
-          z-index: 3;
-        }
-        
-        .visualization-list {
-          width: 100%;
-          max-width: 860px;
+        .modal-footer {
           display: flex;
-          flex-direction: column;
-          margin: 0 auto;
+          gap: 12px;
+          justify-content: flex-end;
         }
-        
-        .visualization-item {
-          width: 100%;
-          scroll-snap-align: start;
+        .modal-button {
+          padding: 10px 20px;
+          border-radius: 6px;
+          border: none;
           cursor: pointer;
-          display: flex;
-          position: relative;
-          aspect-ratio: 2/1;
+          font-size: 14px;
+          font-weight: 500;
+          transition: background 0.2s;
         }
-        
-        .visualization-name {
-          position: absolute;
-          bottom: 4px;
-          left: 8px;
-          font-family: 'Pixelify Sans', monospace;
+        .modal-button.cancel {
+          background: #e0e0e0;
+          color: #333;
+        }
+        .modal-button.cancel:hover {
+          background: #d0d0d0;
+        }
+        .modal-button.confirm {
+          background: #333;
           color: white;
-          font-size: 24px;
-          z-index: 10;
         }
-        
-        .visualization-canvas {
-          width: 100%;
-          height: auto;
-          display: block;
-          transition: all 0.1s ease;
-          border: 0px solid #ffffff;
+        .modal-button.confirm:hover {
+          background: #444;
         }
-
-        .visualization-canvas.selected {
-          border: 4px solid #ffffff;
+        .modal-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .modal-button:disabled:hover {
+          background: #e0e0e0;
+        }
+        .modal-button.confirm:disabled:hover {
+          background: #333;
+        }
+        .spinner {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
+      <div className="wrapper">
+        <PoolCover currentPosition={state.currentPosition} />
+        <Controls state={state} updateState={updateState} />
+      </div>
+    </>
+  );
+}
+
+function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">{title}</h2>
+          <button className="modal-close" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function PoolCover(props: { currentPosition: number }) {
+  return (
+    <div className="pool-cover">
+      <div className="pool">
+        <WaterCausticsCanvas />
+      </div>
+      <div
+        className="pool-cover-surface"
+        style={{
+          height: `calc((100dvh - 100px) * ${
+            (100 - props.currentPosition) / 100
+          } + 50px)`,
+        }}
+      >
+        <div className="pool-cover-surface-inner" />
+        <div className="pool-cover-surface-cap" />
+      </div>
+      <div className="pool-bench">
+        <div className="pool-bench-slat" />
+        <div className="pool-bench-slat" />
+        <div className="pool-bench-slat" />
+        <div className="pool-bench-slat" />
+        <div className="pool-bench-slat" />
+        <div className="pool-bench-slat" />
+        <div className="pool-bench-slat" />
+      </div>
+    </div>
+  );
+}
+
+function Controls({
+  state,
+  updateState,
+}: {
+  state: CoverState;
+  updateState: (newState: Partial<CoverState>) => void;
+}) {
+  const [showCalibrationModal, setShowCalibrationModal] = React.useState(false);
+
+  const handleOpenHoldStart = () => {
+    open(updateState);
+  };
+
+  const handleOpenHoldEnd = () => {
+    stop(updateState);
+  };
+
+  const handleCloseHoldStart = () => {
+    close(updateState);
+  };
+
+  const handleCloseHoldEnd = () => {
+    stop(updateState);
+  };
+
+  const handleCalibrate = () => {
+    calibrate(updateState);
+    setShowCalibrationModal(false);
+  };
+
+  return (
+    <>
+      <Modal
+        isOpen={showCalibrationModal || state.calibrating}
+        onClose={() => {
+          if (!state.calibrating) {
+            setShowCalibrationModal(false);
+          }
+        }}
+        title="Calibrate Pool Cover"
+      >
+        <div className="modal-body">
+          Are you sure you want to calibrate the pool cover? This will reset the
+          position tracking and may take several minutes to complete.
+        </div>
+        <div className="modal-footer">
+          <button
+            className="modal-button cancel"
+            onClick={() => setShowCalibrationModal(false)}
+            disabled={state.calibrating}
+          >
+            Cancel
+          </button>
+          <button
+            className="modal-button confirm"
+            onClick={handleCalibrate}
+            disabled={state.calibrating}
+          >
+            {state.calibrating ? (
+              <>
+                <Loader2
+                  size={16}
+                  className="spinner"
+                  style={{ marginRight: "8px", display: "inline-block" }}
+                />
+                Calibrating...
+              </>
+            ) : (
+              "Confirm"
+            )}
+          </button>
+        </div>
+      </Modal>
+      <div className="controls">
+        <button
+          className="control-button config"
+          onClick={() => setShowCalibrationModal(true)}
+        >
+          <Settings size={24} />
+        </button>
+        <button className="control-button" onClick={() => open(updateState)}>
+          <ChevronsUp size={24} />
+        </button>
+        <button
+          className="control-button"
+          onMouseDown={handleOpenHoldStart}
+          onMouseUp={handleOpenHoldEnd}
+          onMouseLeave={handleOpenHoldEnd}
+          onTouchStart={handleOpenHoldStart}
+          onTouchEnd={handleOpenHoldEnd}
+        >
+          <ChevronUp size={24} />
+        </button>
+        <button className="control-button" onClick={() => stop(updateState)}>
+          <Pause size={24} />
+        </button>
+        <button
+          className="control-button"
+          onMouseDown={handleCloseHoldStart}
+          onMouseUp={handleCloseHoldEnd}
+          onMouseLeave={handleCloseHoldEnd}
+          onTouchStart={handleCloseHoldStart}
+          onTouchEnd={handleCloseHoldEnd}
+        >
+          <ChevronDown size={24} />
+        </button>
+        <button className="control-button" onClick={() => close(updateState)}>
+          <ChevronsDown size={24} />
+        </button>
+      </div>
     </>
   );
 }

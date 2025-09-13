@@ -1,6 +1,6 @@
 import * as hap from "hap-nodejs";
 import * as config from "./config.ts";
-import { CoverState } from "../shared/cover-state.ts";
+import { type CoverState } from "../shared/cover-state.ts";
 import CoverController from "./cover-controller.ts";
 
 export default function (coverController: CoverController): hap.Accessory {
