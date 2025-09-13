@@ -28,7 +28,7 @@ function useRemoteState(): [
     currentPosition: 0,
     targetPosition: 0,
     positionState: 2,
-    calibrating: false,
+    calibration: "uncalibrated",
   });
 
   const polling = React.useRef(false);
