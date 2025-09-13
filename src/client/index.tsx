@@ -157,7 +157,7 @@ function App() {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
         #app-container {
-          background: radial-gradient(ellipse at center top, #d5d5d5 0%, #c8c8c8 40%, #b8b8b8 100%);
+          background: #f2f2f2;
         }
         .wrapper {
           width: calc(100dvh * 0.5625);
