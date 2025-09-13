@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import * as config from "./config.ts";
 import { type Logger } from "winston";
+import * as onoff from "onoff";
 import {
   type CoverState,
   COVER_OPENING,
@@ -50,8 +51,6 @@ export class CoverController extends EventEmitter {
     this.controlLoop = null;
 
     try {
-      // onoff uses EPOLL which is only available on Linux
-      const onoff = require("onoff");
       this.closeLimiterGPIO = new onoff.Gpio(config.CLOSE_LIMITER_GPIO, "in");
       this.openLimiterGPIO = new onoff.Gpio(config.OPEN_LIMITER_GPIO, "in");
       this.motorOpenGPIO = new onoff.Gpio(config.MOTOR_OPEN_GPIO, "out");

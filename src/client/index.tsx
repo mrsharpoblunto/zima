@@ -55,7 +55,9 @@ function useRemoteState(): [
 
     fetch(
       `/api/1/poll-state?state=${JSON.stringify(
-        state
+        state,
+        null,
+        undefined
       )}&timeout=${LONGPOLL_TIMEOUT}`,
       {
         signal: controller.signal,
