@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import * as config from "./config.ts";
+import { type Logger } from "winston";
 import {
   type CoverState,
   COVER_OPENING,
@@ -30,7 +31,7 @@ export class CoverController extends EventEmitter {
   private motorOpenGPIO: any;
   private motorCloseGPIO: any;
 
-  constructor() {
+  constructor(logger: Logger) {
     super();
 
     this.state = {
@@ -56,6 +57,10 @@ export class CoverController extends EventEmitter {
       this.motorOpenGPIO = new onoff.Gpio(config.MOTOR_OPEN_GPIO, "out");
       this.motorCloseGPIO = new onoff.Gpio(config.MOTOR_CLOSE_GPIO, "out");
     } catch (err) {
+      if (err instanceof Error) {
+        logger.error("Failed to register GPIO pins");
+        logger.error(err.stack);
+      }
       // Probably not running on a Raspberry Pi, disable GPIO control & fake
       // calibration
       this.calibrationInfo.calibrated = true;
@@ -75,7 +80,9 @@ export class CoverController extends EventEmitter {
             if (this.calibrationInfo.calibrated) {
               this.state.calibration = "calibrated";
             }
-          } catch (err) {}
+          } catch (err) {
+            logger.error("Failed to load persisted settings");
+          }
         }
       })
       .finally(() => {

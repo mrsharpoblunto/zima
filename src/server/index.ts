@@ -72,7 +72,7 @@ if (process.env.NODE_ENV !== "production") {
     forgiveParseErrors: true,
   });
 
-  app.locals.coverController = new CoverController();
+  app.locals.coverController = new CoverController(app.locals.logger);
   configureApiRoutes(app);
   configureRoutes(app);
   await startServer(app);
