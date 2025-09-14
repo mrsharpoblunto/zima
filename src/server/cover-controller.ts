@@ -123,18 +123,38 @@ export class CoverController extends EventEmitter {
 
       if (this.state.currentPosition < this.state.targetPosition) {
         this.state.positionState = COVER_OPENING;
-        this.motorOpenLine?.requestOutputMode();
-        this.motorCloseLine?.requestInputMode();
+        if (
+          this.motorOpenLine?.direction() !== libgpiod.Line.Direction.OUTPUT
+        ) {
+          this.motorOpenLine?.requestOutputMode();
+        }
+        if (
+          this.motorCloseLine?.direction() !== libgpiod.Line.Direction.INPUT
+        ) {
+          this.motorCloseLine?.requestInputMode();
+        }
         this.motorOpenLine?.setValue(1);
       } else if (this.state.currentPosition > this.state.targetPosition) {
         this.state.positionState = COVER_CLOSING;
-        this.motorOpenLine?.requestInputMode();
-        this.motorCloseLine?.requestOutputMode();
+        if (this.motorOpenLine?.direction() !== libgpiod.Line.Direction.INPUT) {
+          this.motorOpenLine?.requestInputMode();
+        }
+        if (
+          this.motorCloseLine?.direction() !== libgpiod.Line.Direction.OUTPUT
+        ) {
+          this.motorCloseLine?.requestOutputMode();
+        }
         this.motorCloseLine?.setValue(1);
       } else {
         this.state.positionState = COVER_STOPPED;
-        this.motorOpenLine?.requestInputMode();
-        this.motorCloseLine?.requestInputMode();
+        if (this.motorOpenLine?.direction() !== libgpiod.Line.Direction.INPUT) {
+          this.motorOpenLine?.requestInputMode();
+        }
+        if (
+          this.motorCloseLine?.direction() !== libgpiod.Line.Direction.INPUT
+        ) {
+          this.motorCloseLine?.requestInputMode();
+        }
       }
 
       if (this.state.positionState !== previousPositionState) {
@@ -177,15 +197,31 @@ export class CoverController extends EventEmitter {
         this.closeLimiterLine
       ) {
         if (this.closeLimiterLine.getValue() !== 0) {
-          this.motorOpenLine?.requestInputMode();
-          this.motorCloseLine?.requestInputMode();
+          if (
+            this.motorOpenLine?.direction() !== libgpiod.Line.Direction.INPUT
+          ) {
+            this.motorOpenLine?.requestInputMode();
+          }
+          if (
+            this.motorCloseLine?.direction() !== libgpiod.Line.Direction.INPUT
+          ) {
+            this.motorCloseLine?.requestInputMode();
+          }
           this.state.positionState = COVER_STOPPED;
           this.state.targetPosition = 0;
           this.state.currentPosition = 0;
         }
         if (this.openLimiterLine.getValue() !== 0) {
-          this.motorOpenLine?.requestInputMode();
-          this.motorCloseLine?.requestInputMode();
+          if (
+            this.motorOpenLine?.direction() !== libgpiod.Line.Direction.INPUT
+          ) {
+            this.motorOpenLine?.requestInputMode();
+          }
+          if (
+            this.motorCloseLine?.direction() !== libgpiod.Line.Direction.INPUT
+          ) {
+            this.motorCloseLine?.requestInputMode();
+          }
           this.state.positionState = COVER_STOPPED;
           this.state.targetPosition = 100;
           this.state.currentPosition = 100;
