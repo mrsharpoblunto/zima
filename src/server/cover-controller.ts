@@ -67,7 +67,7 @@ export class CoverController extends EventEmitter {
       this.openLimiterLine.requestInputMode();
 
       this.motorOpenLine = new libgpiod.Line(this.chip, config.MOTOR_OPEN_GPIO);
-      this.openLimiterLine.requestInputMode();
+      this.motorOpenLine.requestInputMode();
 
       this.motorCloseLine = new libgpiod.Line(
         this.chip,
