@@ -38,7 +38,7 @@ export default function (coverController: CoverController): hap.Accessory {
       }
     )
     .on("get", function (cb: (error: Error | null, value?: number) => void) {
-      cb(null, coverController.getState().targetPosition);
+      cb(null, coverController.getTargetPosition());
     });
 
   // We can only set this characteristic to 0 (DECREASING), 1 (INCREASING) or 2 (STOPPED)
@@ -69,9 +69,10 @@ export default function (coverController: CoverController): hap.Accessory {
     service
       .getCharacteristic(hap.Characteristic.CurrentPosition)
       .updateValue(state.currentPosition);
+    const target = coverController.getTargetPosition();
     service
       .getCharacteristic(hap.Characteristic.TargetPosition)
-      .updateValue(state.targetPosition);
+      .updateValue(target);
     service
       .getCharacteristic(hap.Characteristic.PositionState)
       .updateValue(state.positionState);

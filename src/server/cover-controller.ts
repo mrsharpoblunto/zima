@@ -20,6 +20,15 @@ type CoverCalibrationInfo = {
   closeTime: number; // milliseconds
 };
 
+type StopTrigger =
+  | {
+      type: "position";
+      target: number;
+    }
+  | {
+      type: "limiter";
+    };
+
 export class CoverController extends EventEmitter {
   private state: CoverState;
   private controlLoop: NodeJS.Timeout | null;
@@ -33,7 +42,8 @@ export class CoverController extends EventEmitter {
   private motorOpenLine: any;
   private motorCloseLine: any;
   private logger: Logger;
-  private waitForLimiter: boolean;
+  private trigger: StopTrigger | null;
+  private pendingState: number | null;
 
   constructor(logger: Logger) {
     super();
@@ -125,45 +135,32 @@ export class CoverController extends EventEmitter {
       const previousPositionState = this.state.positionState;
       const previousPosition = this.state.currentPosition;
 
-      switch (this.state.positionState) {
-        case COVER_OPENING:
-          if (
-            !this.waitForLimiter &&
-            this.state.currentPosition >= this.state.targetPosition
-          ) {
-            this.logger.info("Stopping open...");
-            this.state.positionState = COVER_STOPPED;
-            this.motorOpenLine?.setValue(0);
-            this.motorCloseLine?.setValue(0);
-          }
-          break;
-        case COVER_CLOSING:
-          if (
-            !this.waitForLimiter &&
-            this.state.currentPosition <= this.state.targetPosition
-          ) {
-            this.logger.info("Stopping close...");
-            this.state.positionState = COVER_STOPPED;
-            this.motorOpenLine?.setValue(0);
-            this.motorCloseLine?.setValue(0);
-          }
-          break;
-        case COVER_STOPPED:
-          if (this.state.currentPosition !== this.state.targetPosition) {
-            // Need to move
-            if (this.state.currentPosition < this.state.targetPosition) {
+      if (this.pendingState !== null) {
+        switch (this.pendingState) {
+          case COVER_OPENING:
+            if (this.state.positionState === COVER_STOPPED) {
               this.logger.info("Opening...");
-              this.state.positionState = COVER_OPENING;
               this.motorOpenLine?.setValue(1);
               this.motorCloseLine?.setValue(0);
-            } else if (this.state.currentPosition > this.state.targetPosition) {
+            }
+            break;
+          case COVER_CLOSING:
+            if (this.state.positionState === COVER_STOPPED) {
               this.logger.info("Closing...");
-              this.state.positionState = COVER_CLOSING;
               this.motorOpenLine?.setValue(0);
               this.motorCloseLine?.setValue(1);
             }
-          }
-          break;
+            break;
+          case COVER_STOPPED:
+            if (this.state.positionState !== COVER_STOPPED) {
+              this.logger.info("Stopping...");
+              this.motorOpenLine?.setValue(0);
+              this.motorCloseLine?.setValue(0);
+              this.trigger = null;
+            }
+            break;
+        }
+        this.pendingState = null;
       }
 
       if (this.state.positionState !== previousPositionState) {
@@ -195,6 +192,28 @@ export class CoverController extends EventEmitter {
         }
       }
 
+      if (this.trigger && this.trigger.type === "position") {
+        if (
+          this.state.positionState === COVER_OPENING &&
+          this.state.currentPosition >= this.trigger.target
+        ) {
+          this.logger.info(
+            `Target position ${this.trigger.target}% reached - Stopping...`
+          );
+          this.pendingState = COVER_STOPPED;
+          this.trigger = null;
+        } else if (
+          this.state.positionState === COVER_CLOSING &&
+          this.state.currentPosition <= this.trigger.target
+        ) {
+          this.logger.info(
+            `Target position ${this.trigger.target}% reached - Stopping...`
+          );
+          this.pendingState = COVER_STOPPED;
+          this.trigger = null;
+        }
+      }
+
       // if limiter switches engage, stop the cover and set currentPosition to 0 or 100
       // but also ensure we give the cover time to move before checking limiters
       if (
@@ -204,13 +223,15 @@ export class CoverController extends EventEmitter {
       ) {
         if (this.closeLimiterLine.getValue() !== 0) {
           this.logger.info("Close limiter engaged - Stopping...");
-          this.state.targetPosition = 0;
+          this.pendingState = COVER_STOPPED;
           this.state.currentPosition = 0;
+          this.trigger = null;
         }
         if (this.openLimiterLine.getValue() !== 0) {
           this.logger.info("Open limiter engaged - Stopping...");
-          this.state.targetPosition = 100;
+          this.pendingState = COVER_STOPPED;
           this.state.currentPosition = 100;
+          this.trigger = null;
         }
       }
 
@@ -250,6 +271,17 @@ export class CoverController extends EventEmitter {
     process.exit();
   }
 
+  getTargetPosition(): number {
+    if (this.trigger && this.trigger.type === "position") {
+      return this.trigger.target;
+    } else if (this.state.positionState === COVER_OPENING) {
+      return 100;
+    } else if (this.state.positionState === COVER_CLOSING) {
+      return 0;
+    }
+    return this.state.currentPosition;
+  }
+
   getState(): CoverState {
     return { ...this.state };
   }
@@ -257,32 +289,27 @@ export class CoverController extends EventEmitter {
   open(): void {
     this.logger.info("Open command received");
     if (Date.now() - this.lastStateChangeTime > 1000) {
-      this.state.targetPosition = 100;
-      this.waitForLimiter = this.chip ? true : false;
-      this.logger.info(
-        `Setting target position to ${this.state.targetPosition}`
-      );
+      this.trigger = {
+        type: "limiter",
+      };
+      this.pendingState = COVER_OPENING;
     }
   }
 
   close(): void {
     this.logger.info("Close command received");
     if (Date.now() - this.lastStateChangeTime > 1000) {
-      this.state.targetPosition = 0;
-      this.waitForLimiter = this.chip ? true : false;
-      this.logger.info(
-        `Setting target position to ${this.state.targetPosition}`
-      );
+      this.trigger = {
+        type: "limiter",
+      };
+      this.pendingState = COVER_CLOSING;
     }
   }
 
   stop(): void {
     this.logger.info("Stop command received");
-    this.state.targetPosition = this.state.currentPosition;
-    this.waitForLimiter = false;
-    this.logger.info(
-      `Setting target position to ${this.state.currentPosition}`
-    );
+    this.trigger = null;
+    this.pendingState = COVER_STOPPED;
   }
 
   setTargetPosition(position: number): void {
@@ -294,11 +321,19 @@ export class CoverController extends EventEmitter {
       if (position < 0 || position > 100) {
         throw new Error("Position must be between 0 and 100");
       }
-      this.state.targetPosition = position;
-      this.waitForLimiter = this.chip
-        ? position === 0 || position === 100
-        : false;
-      this.logger.info(`Setting target position to ${position}`);
+      if (position > this.state.currentPosition) {
+        this.pendingState = COVER_OPENING;
+      } else if (position < this.state.currentPosition) {
+        this.pendingState = COVER_CLOSING;
+      } else {
+        this.pendingState = null;
+      }
+      if (this.pendingState !== null) {
+        this.trigger = {
+          type: "position",
+          target: position,
+        };
+      }
     }
   }
 
@@ -315,9 +350,10 @@ export class CoverController extends EventEmitter {
     let calibrationLoop = setInterval(() => {
       switch (calibrationState) {
         case "INITIAL_CLOSE":
-          this.state.targetPosition = 0;
-          this.state.currentPosition = 100;
-          this.state.positionState = COVER_CLOSING;
+          this.trigger = {
+            type: "limiter",
+          };
+          this.pendingState = COVER_CLOSING;
           calibrationState = "WAITING_FOR_INITIAL_CLOSE";
           break;
         case "WAITING_FOR_INITIAL_CLOSE":
@@ -331,8 +367,10 @@ export class CoverController extends EventEmitter {
           break;
         case "WAITING_BEFORE_OPEN":
           if (Date.now() - startTime > 2000) {
-            this.state.targetPosition = 100;
-            this.state.positionState = COVER_OPENING;
+            this.trigger = {
+              type: "limiter",
+            };
+            this.pendingState = COVER_OPENING;
             startTime = Date.now();
             calibrationState = "OPENING";
           }
@@ -346,8 +384,10 @@ export class CoverController extends EventEmitter {
           break;
         case "WAITING_BEFORE_CLOSING":
           if (Date.now() - startTime > 2000) {
-            this.state.targetPosition = 0;
-            this.state.positionState = COVER_CLOSING;
+            this.trigger = {
+              type: "limiter",
+            };
+            this.pendingState = COVER_CLOSING;
             startTime = Date.now();
             calibrationState = "CLOSING";
           }

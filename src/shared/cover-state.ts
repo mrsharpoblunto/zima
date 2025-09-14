@@ -4,7 +4,6 @@ export const COVER_STOPPED = 2;
 
 export type CoverState = {
   currentPosition: number;
-  targetPosition: number;
   positionState: number;
   calibration: "uncalibrated" | "inprogress" | "calibrated";
 };
