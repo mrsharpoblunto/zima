@@ -32,10 +32,13 @@ export class CoverController extends EventEmitter {
   private openLimiterLine: any;
   private motorOpenLine: any;
   private motorCloseLine: any;
+  private logger: Logger;
+  private waitForLimiter: boolean;
 
   constructor(logger: Logger) {
     super();
 
+    this.logger = logger;
     this.state = {
       currentPosition: 0,
       targetPosition: 0,
@@ -47,9 +50,10 @@ export class CoverController extends EventEmitter {
       openTime: 10000,
       closeTime: 15000,
     };
-    this.lastStateChangeTime = Date.now();
+    this.lastStateChangeTime = 0;
     this.positionAtLastStateChange = 0;
     this.controlLoop = null;
+    this.waitForLimiter = false;
 
     try {
       this.chip = new libgpiod.Chip(0);
@@ -121,18 +125,45 @@ export class CoverController extends EventEmitter {
       const previousPositionState = this.state.positionState;
       const previousPosition = this.state.currentPosition;
 
-      if (this.state.currentPosition < this.state.targetPosition) {
-        this.state.positionState = COVER_OPENING;
-        this.motorOpenLine?.setValue(1);
-        this.motorCloseLine?.setValue(0);
-      } else if (this.state.currentPosition > this.state.targetPosition) {
-        this.state.positionState = COVER_CLOSING;
-        this.motorOpenLine?.setValue(0);
-        this.motorCloseLine?.setValue(1);
-      } else {
-        this.state.positionState = COVER_STOPPED;
-        this.motorOpenLine?.setValue(0);
-        this.motorCloseLine?.setValue(0);
+      switch (this.state.positionState) {
+        case COVER_OPENING:
+          if (
+            !this.waitForLimiter &&
+            this.state.currentPosition >= this.state.targetPosition
+          ) {
+            this.logger.info("Stopping open...");
+            this.state.positionState = COVER_STOPPED;
+            this.motorOpenLine?.setValue(0);
+            this.motorCloseLine?.setValue(0);
+          }
+          break;
+        case COVER_CLOSING:
+          if (
+            !this.waitForLimiter &&
+            this.state.currentPosition <= this.state.targetPosition
+          ) {
+            this.logger.info("Stopping close...");
+            this.state.positionState = COVER_STOPPED;
+            this.motorOpenLine?.setValue(0);
+            this.motorCloseLine?.setValue(0);
+          }
+          break;
+        case COVER_STOPPED:
+          if (this.state.currentPosition !== this.state.targetPosition) {
+            // Need to move
+            if (this.state.currentPosition < this.state.targetPosition) {
+              this.logger.info("Opening...");
+              this.state.positionState = COVER_OPENING;
+              this.motorOpenLine?.setValue(1);
+              this.motorCloseLine?.setValue(0);
+            } else if (this.state.currentPosition > this.state.targetPosition) {
+              this.logger.info("Closing...");
+              this.state.positionState = COVER_CLOSING;
+              this.motorOpenLine?.setValue(0);
+              this.motorCloseLine?.setValue(1);
+            }
+          }
+          break;
       }
 
       if (this.state.positionState !== previousPositionState) {
@@ -142,8 +173,7 @@ export class CoverController extends EventEmitter {
 
       if (
         this.calibrationInfo.calibrated &&
-        this.state.positionState !== COVER_STOPPED &&
-        this.state.targetPosition !== this.state.currentPosition
+        this.state.positionState !== COVER_STOPPED
       ) {
         // Estimate position based on time elapsed since last state change
         const elapsedTime = Date.now() - this.lastStateChangeTime;
@@ -163,28 +193,22 @@ export class CoverController extends EventEmitter {
             this.positionAtLastStateChange - positionChange
           );
         }
-      } else if (this.state.currentPosition === this.state.targetPosition) {
-        this.state.positionState = COVER_STOPPED;
       }
 
       // if limiter switches engage, stop the cover and set currentPosition to 0 or 100
       // but also ensure we give the cover time to move before checking limiters
       if (
         Date.now() - this.lastStateChangeTime > 5000 &&
-        this.openLimiterLine &&
-        this.closeLimiterLine
+        this.chip &&
+        this.state.positionState !== COVER_STOPPED
       ) {
         if (this.closeLimiterLine.getValue() !== 0) {
-          this.motorOpenLine?.setValue(0);
-          this.motorCloseLine?.setValue(0);
-          this.state.positionState = COVER_STOPPED;
+          this.logger.info("Close limiter engaged - Stopping...");
           this.state.targetPosition = 0;
           this.state.currentPosition = 0;
         }
         if (this.openLimiterLine.getValue() !== 0) {
-          this.motorOpenLine?.setValue(0);
-          this.motorCloseLine?.setValue(0);
-          this.state.positionState = COVER_STOPPED;
+          this.logger.info("Open limiter engaged - Stopping...");
           this.state.targetPosition = 100;
           this.state.currentPosition = 100;
         }
@@ -231,22 +255,38 @@ export class CoverController extends EventEmitter {
   }
 
   open(): void {
+    this.logger.info("Open command received");
     if (Date.now() - this.lastStateChangeTime > 1000) {
       this.state.targetPosition = 100;
+      this.waitForLimiter = this.chip ? true : false;
+      this.logger.info(
+        `Setting target position to ${this.state.targetPosition}`
+      );
     }
   }
 
   close(): void {
+    this.logger.info("Close command received");
     if (Date.now() - this.lastStateChangeTime > 1000) {
       this.state.targetPosition = 0;
+      this.waitForLimiter = this.chip ? true : false;
+      this.logger.info(
+        `Setting target position to ${this.state.targetPosition}`
+      );
     }
   }
 
   stop(): void {
+    this.logger.info("Stop command received");
     this.state.targetPosition = this.state.currentPosition;
+    this.waitForLimiter = false;
+    this.logger.info(
+      `Setting target position to ${this.state.currentPosition}`
+    );
   }
 
   setTargetPosition(position: number): void {
+    this.logger.info(`Set position command received: ${position}`);
     if (
       this.state.calibration === "calibrated" &&
       Date.now() - this.lastStateChangeTime > 1000
@@ -255,6 +295,10 @@ export class CoverController extends EventEmitter {
         throw new Error("Position must be between 0 and 100");
       }
       this.state.targetPosition = position;
+      this.waitForLimiter = this.chip
+        ? position === 0 || position === 100
+        : false;
+      this.logger.info(`Setting target position to ${position}`);
     }
   }
 
