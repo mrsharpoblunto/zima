@@ -26,7 +26,6 @@ function useRemoteState(): [
 ] {
   const [remoteState, setRemoteState] = React.useState<CoverState>({
     currentPosition: 0,
-    targetPosition: 0,
     positionState: 2,
     calibration: "uncalibrated",
   });
@@ -99,7 +98,6 @@ function useRemoteState(): [
 
 function open(updateState: (newState: Partial<CoverState>) => void) {
   const optimisticState = {
-    targetPosition: 100,
     positionState: COVER_OPENING,
   };
   updateState(optimisticState);
@@ -112,7 +110,6 @@ function open(updateState: (newState: Partial<CoverState>) => void) {
 
 function close(updateState: (newState: Partial<CoverState>) => void) {
   const optimisticState = {
-    targetPosition: 0,
     positionState: COVER_CLOSING,
   };
   updateState(optimisticState);

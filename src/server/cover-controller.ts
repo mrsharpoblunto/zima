@@ -51,7 +51,6 @@ export class CoverController extends EventEmitter {
     this.logger = logger;
     this.state = {
       currentPosition: 0,
-      targetPosition: 0,
       positionState: COVER_STOPPED,
       calibration: "uncalibrated",
     };
@@ -63,7 +62,8 @@ export class CoverController extends EventEmitter {
     this.lastStateChangeTime = 0;
     this.positionAtLastStateChange = 0;
     this.controlLoop = null;
-    this.waitForLimiter = false;
+    this.trigger = null;
+    this.pendingState = null;
 
     try {
       this.chip = new libgpiod.Chip(0);
@@ -343,7 +343,6 @@ export class CoverController extends EventEmitter {
     }
 
     this.state.calibration = "inprogress";
-    this.state.targetPosition = 0;
 
     let calibrationState = "INITIAL_CLOSE";
     let startTime: number;
