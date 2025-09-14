@@ -140,6 +140,7 @@ export class CoverController extends EventEmitter {
           case COVER_OPENING:
             if (this.state.positionState === COVER_STOPPED) {
               this.logger.info("Opening...");
+              this.state.positionState = COVER_OPENING;
               this.motorOpenLine?.setValue(1);
               this.motorCloseLine?.setValue(0);
             }
@@ -147,6 +148,7 @@ export class CoverController extends EventEmitter {
           case COVER_CLOSING:
             if (this.state.positionState === COVER_STOPPED) {
               this.logger.info("Closing...");
+              this.state.positionState = COVER_CLOSING;
               this.motorOpenLine?.setValue(0);
               this.motorCloseLine?.setValue(1);
             }
@@ -154,6 +156,7 @@ export class CoverController extends EventEmitter {
           case COVER_STOPPED:
             if (this.state.positionState !== COVER_STOPPED) {
               this.logger.info("Stopping...");
+              this.state.positionState = COVER_STOPPED;
               this.motorOpenLine?.setValue(0);
               this.motorCloseLine?.setValue(0);
               this.trigger = null;
