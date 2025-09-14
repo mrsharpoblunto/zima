@@ -232,7 +232,6 @@ export class CoverController extends EventEmitter {
       this.motorCloseLine?.release();
       this.openLimiterLine?.release();
       this.closeLimiterLine?.release();
-      this.chip.close();
     }
     process.exit();
   }
