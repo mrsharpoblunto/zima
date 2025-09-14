@@ -123,20 +123,16 @@ export class CoverController extends EventEmitter {
 
       if (this.state.currentPosition < this.state.targetPosition) {
         this.state.positionState = COVER_OPENING;
-        this.motorOpenLine?.setValue(1);
-        this.motorCloseLine?.setValue(0);
         this.motorOpenLine?.requestOutputMode();
         this.motorCloseLine?.requestInputMode();
+        this.motorOpenLine?.setValue(1);
       } else if (this.state.currentPosition > this.state.targetPosition) {
         this.state.positionState = COVER_CLOSING;
-        this.motorOpenLine?.setValue(0);
-        this.motorCloseLine?.setValue(1);
         this.motorOpenLine?.requestInputMode();
         this.motorCloseLine?.requestOutputMode();
+        this.motorCloseLine?.setValue(1);
       } else {
         this.state.positionState = COVER_STOPPED;
-        this.motorOpenLine?.setValue(0);
-        this.motorCloseLine?.setValue(0);
         this.motorOpenLine?.requestInputMode();
         this.motorCloseLine?.requestInputMode();
       }
@@ -181,8 +177,6 @@ export class CoverController extends EventEmitter {
         this.closeLimiterLine
       ) {
         if (this.closeLimiterLine.getValue() !== 0) {
-          this.motorOpenLine?.setValue(0);
-          this.motorCloseLine?.setValue(0);
           this.motorOpenLine?.requestInputMode();
           this.motorCloseLine?.requestInputMode();
           this.state.positionState = COVER_STOPPED;
@@ -190,8 +184,6 @@ export class CoverController extends EventEmitter {
           this.state.currentPosition = 0;
         }
         if (this.openLimiterLine.getValue() !== 0) {
-          this.motorOpenLine?.setValue(0);
-          this.motorCloseLine?.setValue(0);
           this.motorOpenLine?.requestInputMode();
           this.motorCloseLine?.requestInputMode();
           this.state.positionState = COVER_STOPPED;
