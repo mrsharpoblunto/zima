@@ -123,36 +123,28 @@ export class CoverController extends EventEmitter {
 
       if (this.state.currentPosition < this.state.targetPosition) {
         this.state.positionState = COVER_OPENING;
-        if (
-          this.motorOpenLine?.direction() !== libgpiod.Line.Direction.OUTPUT
-        ) {
+        if (this.motorOpenLine?.direction !== libgpiod.Line.Direction.OUTPUT) {
           this.motorOpenLine?.requestOutputMode();
         }
-        if (
-          this.motorCloseLine?.direction() !== libgpiod.Line.Direction.INPUT
-        ) {
+        if (this.motorCloseLine?.direction !== libgpiod.Line.Direction.INPUT) {
           this.motorCloseLine?.requestInputMode();
         }
         this.motorOpenLine?.setValue(1);
       } else if (this.state.currentPosition > this.state.targetPosition) {
         this.state.positionState = COVER_CLOSING;
-        if (this.motorOpenLine?.direction() !== libgpiod.Line.Direction.INPUT) {
+        if (this.motorOpenLine?.direction !== libgpiod.Line.Direction.INPUT) {
           this.motorOpenLine?.requestInputMode();
         }
-        if (
-          this.motorCloseLine?.direction() !== libgpiod.Line.Direction.OUTPUT
-        ) {
+        if (this.motorCloseLine?.direction !== libgpiod.Line.Direction.OUTPUT) {
           this.motorCloseLine?.requestOutputMode();
         }
         this.motorCloseLine?.setValue(1);
       } else {
         this.state.positionState = COVER_STOPPED;
-        if (this.motorOpenLine?.direction() !== libgpiod.Line.Direction.INPUT) {
+        if (this.motorOpenLine?.direction !== libgpiod.Line.Direction.INPUT) {
           this.motorOpenLine?.requestInputMode();
         }
-        if (
-          this.motorCloseLine?.direction() !== libgpiod.Line.Direction.INPUT
-        ) {
+        if (this.motorCloseLine?.direction !== libgpiod.Line.Direction.INPUT) {
           this.motorCloseLine?.requestInputMode();
         }
       }
@@ -197,13 +189,11 @@ export class CoverController extends EventEmitter {
         this.closeLimiterLine
       ) {
         if (this.closeLimiterLine.getValue() !== 0) {
-          if (
-            this.motorOpenLine?.direction() !== libgpiod.Line.Direction.INPUT
-          ) {
+          if (this.motorOpenLine?.direction !== libgpiod.Line.Direction.INPUT) {
             this.motorOpenLine?.requestInputMode();
           }
           if (
-            this.motorCloseLine?.direction() !== libgpiod.Line.Direction.INPUT
+            this.motorCloseLine?.direction !== libgpiod.Line.Direction.INPUT
           ) {
             this.motorCloseLine?.requestInputMode();
           }
@@ -212,13 +202,11 @@ export class CoverController extends EventEmitter {
           this.state.currentPosition = 0;
         }
         if (this.openLimiterLine.getValue() !== 0) {
-          if (
-            this.motorOpenLine?.direction() !== libgpiod.Line.Direction.INPUT
-          ) {
+          if (this.motorOpenLine?.direction !== libgpiod.Line.Direction.INPUT) {
             this.motorOpenLine?.requestInputMode();
           }
           if (
-            this.motorCloseLine?.direction() !== libgpiod.Line.Direction.INPUT
+            this.motorCloseLine?.direction !== libgpiod.Line.Direction.INPUT
           ) {
             this.motorCloseLine?.requestInputMode();
           }
