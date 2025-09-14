@@ -146,9 +146,20 @@ function calibrate(updateState: (newState: Partial<CoverState>) => void) {
     body: JSON.stringify({}),
   });
 }
-
 function App() {
   const [state, updateState] = useRemoteState();
+
+  React.useState(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+    document.addEventListener("contextmenu", handleContextMenu);
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu);
+    };
+  });
   return (
     <>
       <style>{`
