@@ -525,15 +525,10 @@ function Controls({
           onMouseLeave={handleOpenHoldEnd}
           onTouchStart={handleOpenHoldStart}
           onTouchEnd={handleOpenHoldEnd}
-          disabled={state.calibration !== "calibrated"}
         >
           <ChevronUp size={24} />
         </button>
-        <button
-          className="control-button"
-          onClick={() => stop(updateState)}
-          disabled={state.calibration !== "calibrated"}
-        >
+        <button className="control-button" onClick={() => stop(updateState)}>
           <Pause size={24} />
         </button>
         <button
@@ -543,7 +538,6 @@ function Controls({
           onMouseLeave={handleCloseHoldEnd}
           onTouchStart={handleCloseHoldStart}
           onTouchEnd={handleCloseHoldEnd}
-          disabled={state.calibration !== "calibrated"}
         >
           <ChevronDown size={24} />
         </button>

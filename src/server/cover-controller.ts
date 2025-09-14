@@ -200,6 +200,18 @@ export class CoverController extends EventEmitter {
     }, 100);
   }
 
+  getHardwareState(): any {
+    if (this.chip) {
+      return {
+        motorOpen: this.motorOpenLine.getValue(),
+        motorClose: this.motorCloseLine.getValue(),
+        openLimiter: this.openLimiterLine.getValue(),
+        closeLimiter: this.closeLimiterLine.getValue(),
+      };
+    }
+    return {};
+  }
+
   cleanup(): void {
     if (this.controlLoop) {
       clearInterval(this.controlLoop);
@@ -220,27 +232,19 @@ export class CoverController extends EventEmitter {
   }
 
   open(): void {
-    if (
-      this.state.calibration === "calibrated" &&
-      Date.now() - this.lastStateChangeTime > 1000
-    ) {
+    if (Date.now() - this.lastStateChangeTime > 1000) {
       this.state.targetPosition = 100;
     }
   }
 
   close(): void {
-    if (
-      this.state.calibration === "calibrated" &&
-      Date.now() - this.lastStateChangeTime > 1000
-    ) {
+    if (Date.now() - this.lastStateChangeTime > 1000) {
       this.state.targetPosition = 0;
     }
   }
 
   stop(): void {
-    if (this.state.calibration === "calibrated") {
-      this.state.targetPosition = this.state.currentPosition;
-    }
+    this.state.targetPosition = this.state.currentPosition;
   }
 
   setTargetPosition(position: number): void {

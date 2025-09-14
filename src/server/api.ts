@@ -117,6 +117,20 @@ export function configureApiRoutes(app: Application): void {
     }
   });
 
+  app.get("/api/1/hardware-state", (req: Request, res: Response) => {
+    try {
+      if (!req.app.locals.coverController) {
+        throw new Error("CoverController not initialized");
+      }
+      res.json(req.app.locals.coverController.getHardwareState());
+    } catch (err: any) {
+      req.app.locals.logger?.error(err.stack);
+      res.status(500).json({
+        success: false,
+      });
+    }
+  });
+
   app.post("/api/1/calibrate", async (req: Request, res: Response) => {
     try {
       if (!req.app.locals.coverController) {
