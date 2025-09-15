@@ -82,12 +82,14 @@ export class CoverController extends EventEmitter {
 
       this.motorOpenLine = new libgpiod.Line(this.chip, config.MOTOR_OPEN_GPIO);
       this.motorOpenLine.requestOutputMode();
+      this.motorOpenLine.setValue(0);
 
       this.motorCloseLine = new libgpiod.Line(
         this.chip,
         config.MOTOR_CLOSE_GPIO
       );
       this.motorCloseLine.requestOutputMode();
+      this.motorCloseLine.setValue(0);
     } catch (err) {
       if (err instanceof Error) {
         logger.error("Failed to register GPIO pins");
