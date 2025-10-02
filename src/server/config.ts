@@ -35,8 +35,8 @@ export const COVER_KEY = "cover_state";
 
 export const CLOSE_LIMITER_GPIO = 4;
 export const OPEN_LIMITER_GPIO = 17;
-export const MOTOR_OPEN_GPIO = 22;
-export const MOTOR_CLOSE_GPIO = 27;
+export const MOTOR_OPEN_GPIO = 27;
+export const MOTOR_CLOSE_GPIO = 22;
 
 export const SSL_KEY = path.join(__dirname, "../../ssl/server.key");
 export const SSL_CERT = path.join(__dirname, "../../ssl/server.crt");
