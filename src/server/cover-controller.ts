@@ -226,13 +226,13 @@ export class CoverController extends EventEmitter {
         this.chip &&
         this.state.positionState !== COVER_STOPPED
       ) {
-        if (this.closeLimiterLine.getValue() !== 0) {
+        if (this.closeLimiterLine.getValue() === 0) {
           this.logger.info("Close limiter engaged - Stopping...");
           this.pendingState = COVER_STOPPED;
           this.state.currentPosition = 0;
           this.trigger = null;
         }
-        if (this.openLimiterLine.getValue() !== 0) {
+        if (this.openLimiterLine.getValue() === 0) {
           this.logger.info("Open limiter engaged - Stopping...");
           this.pendingState = COVER_STOPPED;
           this.state.currentPosition = 100;
