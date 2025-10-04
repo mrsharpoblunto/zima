@@ -10,6 +10,8 @@ import {
 } from "../shared/cover-state.ts";
 import storage from "node-persist";
 
+const EPSILON = 0.001;
+
 export interface CoverEvent {
   state: CoverState;
 }
@@ -243,7 +245,7 @@ export class CoverController extends EventEmitter {
       // Emit change event if state changed
       if (
         this.state.positionState !== previousPositionState ||
-        Math.abs(this.state.currentPosition - previousPosition) > 0.5
+        Math.abs(this.state.currentPosition - previousPosition) > EPSILON
       ) {
         this.emit("change", { state: this.getState() });
       }
