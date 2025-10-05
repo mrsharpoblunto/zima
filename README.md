@@ -1,3 +1,5 @@
+A Raspberry Pi powered pool cover automation app. Allows you to remotely open a pool cover (or any electrically powered door really) via a web-app or HomeKit automation. Check out https://sharpoblunto.com/News/2025/10/03/zima-blue for more information on how to hook this up to actual hardware.
+
 # Installing
 
 - run `scripts/setup.sh`
