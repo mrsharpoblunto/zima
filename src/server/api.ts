@@ -47,7 +47,7 @@ export function configureApiRoutes(app: Application): void {
     if (
       req.app.locals.coverController &&
       JSON.stringify(queryState) !==
-        JSON.stringify(req.app.locals.coverController.getState())
+      JSON.stringify(req.app.locals.coverController.getState())
     ) {
       res.json({
         success: true,
